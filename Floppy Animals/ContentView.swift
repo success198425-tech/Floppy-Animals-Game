@@ -311,6 +311,20 @@ struct ContentView: View {
         }
     }
     
+    // Helper: determine whether there is a pipe in the firing zone (in front of bird)
+    func canFireNow() -> Bool {
+        // Firing zone: any non-destroyed pipe that comes close enough ahead of the bird's X.
+        // Tune margins to your liking; here we allow pipes that are between birdX and (birdX + 220 pts)
+        let forwardZoneMaxX = AdaptiveScreen.birdX + AdaptiveScreen.scale(220)
+        return pipes.contains { pipe in
+            guard !pipe.destroyed else { return false }
+            let pipeLeft = pipe.x
+            let pipeRight = pipe.x + AdaptiveScreen.pipeWidth
+            // Check if pipe intersects the forward zone
+            return pipeRight >= AdaptiveScreen.birdX && pipeLeft <= forwardZoneMaxX
+        }
+    }
+    
     func startGame() {
         gameState = .playing; birdY = AdaptiveScreen.height/2; prevBirdY = birdY; birdVelocity = 0
         pipes.removeAll(); bullets.removeAll(); powerUps.removeAll(); hitExplosions.removeAll()
@@ -318,14 +332,34 @@ struct ContentView: View {
         coinManager.sessionEarnedCoins = 0; HighScoreManager.shared.resetMilestone(); stopAutoFire(); addPipe()
     }
     func jump() { birdVelocity = selectedCharacter.jumpStrength; SoundManager.shared.playJump(selectedCharacter) }
+    
+    // Auto-fire now only consumes ammo and creates bullets when canFireNow() is true.
     func startAutoFire() {
         stopAutoFire()
-        autoFireTimer = Timer.scheduledTimer(withTimeInterval:0.35, repeats:true) { _ in
-            if ammoCount>0 && gameState == .playing { ammoCount -= 1; bullets.append(Bullet(x: AdaptiveScreen.birdX + AdaptiveScreen.scale(32), y: birdY)); SoundManager.shared.playShoot() }
-            else { stopAutoFire() }
+        // Keep a scheduled timer but only fire when canFireNow() is true and other conditions match.
+        autoFireTimer = Timer.scheduledTimer(withTimeInterval:0.20, repeats:true) { _ in
+            if gameState != .playing {
+                stopAutoFire()
+                return
+            }
+            if ammoCount <= 0 {
+                stopAutoFire()
+                return
+            }
+            // Only fire when a pipe is present in the firing zone.
+            if canFireNow() {
+                // Fire a bullet
+                ammoCount -= 1
+                bullets.append(Bullet(x: AdaptiveScreen.birdX + AdaptiveScreen.scale(32), y: birdY))
+                SoundManager.shared.playShoot()
+            } else {
+                // No pipe in the firing zone — do not consume ammo.
+                // Wait for next tick where a pipe may arrive.
+            }
         }
     }
     func stopAutoFire() { autoFireTimer?.invalidate(); autoFireTimer = nil }
+    
     func updateGame() {
         prevBirdY = birdY; birdVelocity += Difficulty.normalGravity; birdY += birdVelocity
         if birdY > AdaptiveScreen.height - AdaptiveScreen.groundOffset { birdY = AdaptiveScreen.height - AdaptiveScreen.groundOffset; if !bypassMode { gameOver() }; return }
