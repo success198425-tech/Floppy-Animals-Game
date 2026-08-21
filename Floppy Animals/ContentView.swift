@@ -116,14 +116,17 @@ struct AdaptiveScreen {
     static let charSize: CGFloat = scale(42)
 }
 
-// MARK: - 🔊 SOUND MANAGER
+// MARK: - 🔊 SOUND MANAGER (respects mute flag)
 class SoundManager {
     static let shared = SoundManager()
     private init() {
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .duckOthers)
         try? AVAudioSession.sharedInstance().setActive(true)
     }
-    private func playSound(_ id: UInt32) { AudioServicesPlaySystemSound(id) }
+    private func playSound(_ id: UInt32) {
+        guard !UserDefaults.standard.bool(forKey: "Muted") else { return }
+        AudioServicesPlaySystemSound(id)
+    }
     func playJump(_ c: CharacterType) { playSound([.monkey:1306, .chicken:1315, .bird:1307, .eagle:1318][c]!) }
     func playScore(_ c: CharacterType) { playSound([.monkey:1057, .chicken:1003, .bird:1004, .eagle:1113][c]!) }
     func playGameOver(_ c: CharacterType) { playSound([.monkey:1053, .chicken:1050, .bird:1052, .eagle:1051][c]!) }
@@ -168,21 +171,97 @@ class CoinManager: ObservableObject {
     }
 }
 
-// MARK: - 🎨 3D GUN VIEW
+// MARK: - 🎨 REALISTIC / SEMI-REALISTIC 3D GUN VIEW
 struct Realistic3DGun: View {
-    let gun: GunType; let size: CGFloat
-    @State private var pulse = false
+    let gun: GunType
+    let size: CGFloat
+    var isFiring: Bool = false // pass true briefly when a shot occurs to show muzzle flash
+    
+    @State private var flashScale: CGFloat = 0.6
+    @State private var flashOpacity: Double = 0.0
     var body: some View {
         ZStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: size*0.12).fill(Color.black.opacity(0.3)).frame(width: size*1.8, height: size*0.55).offset(x: size*0.08, y: size*0.1).blur(radius: 4)
-            RoundedRectangle(cornerRadius: size*0.12).fill(LinearGradient(colors: [gun.lightColor, gun.baseColor, gun.darkColor], startPoint: .topLeading, endPoint: .bottomTrailing)).frame(width: size*1.8, height: size*0.55).shadow(color: gun.darkColor.opacity(0.5), radius: 4, x: 2, y: 3)
-            RoundedRectangle(cornerRadius: size*0.06).fill(LinearGradient(colors: [Color.gray.opacity(0.9), Color(white:0.3), Color.black], startPoint: .top, endPoint: .bottom)).frame(width: size*0.7, height: size*0.22).offset(x: size*0.05, y: -size*0.02)
-            RoundedRectangle(cornerRadius: size*0.08).fill(LinearGradient(colors: [Color(red:0.3, green:0.22, blue:0.15), Color(red:0.18, green:0.12, blue:0.08)], startPoint: .top, endPoint: .bottom)).frame(width: size*0.35, height: size*0.45).offset(x: size*0.75, y: size*0.28)
-            RoundedRectangle(cornerRadius: size*0.12).fill(Color.white.opacity(0.25)).frame(width: size*1.5, height: size*0.18).blur(radius: 2).offset(x:0, y: -size*0.12)
-            Text("\(gun.ammo)").font(.system(size: size*0.32, weight: .heavy, design: .rounded)).foregroundColor(.white).shadow(color: .black.opacity(0.6), radius:1, x:1, y:1).offset(x: size*1.2, y: -size*0.05)
+            // Body shadow
+            RoundedRectangle(cornerRadius: size*0.12)
+                .fill(Color.black.opacity(0.35))
+                .frame(width: size*1.9, height: size*0.6)
+                .offset(x: size*0.08, y: size*0.12)
+                .blur(radius: 3)
+            
+            // Main casing (metal)
+            RoundedRectangle(cornerRadius: size*0.12)
+                .fill(LinearGradient(colors: [gun.lightColor, gun.baseColor, gun.darkColor], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .frame(width: size*1.9, height: size*0.6)
+                .shadow(color: gun.darkColor.opacity(0.6), radius: 5, x: 2, y: 3)
+            
+            // Barrel extension
+            RoundedRectangle(cornerRadius: size*0.06)
+                .fill(LinearGradient(colors: [Color(white: 0.85), Color(white: 0.25)], startPoint: .top, endPoint: .bottom))
+                .frame(width: size*0.9, height: size*0.22)
+                .offset(x: size*1.0, y: -size*0.02)
+                .overlay(
+                    // muzzle tip
+                    Circle().stroke(Color.black.opacity(0.7), lineWidth: size*0.05)
+                        .frame(width: size*0.18, height: size*0.18)
+                        .offset(x: size*1.46)
+                )
+            
+            // Grip detail
+            RoundedRectangle(cornerRadius: size*0.08)
+                .fill(LinearGradient(colors: [Color(red:0.22, green:0.18, blue:0.12), Color(red:0.10, green:0.09, blue:0.06)], startPoint: .top, endPoint: .bottom))
+                .frame(width: size*0.36, height: size*0.46)
+                .offset(x: size*0.72, y: size*0.30)
+                .shadow(color: Color.black.opacity(0.25), radius: 2, x: 1, y: 2)
+            
+            // Top sight
+            RoundedRectangle(cornerRadius: size*0.02)
+                .fill(Color.black.opacity(0.65))
+                .frame(width: size*0.28, height: size*0.06)
+                .offset(x: size*0.28, y: -size*0.18)
+                .overlay(RoundedRectangle(cornerRadius: size*0.02).stroke(Color.white.opacity(0.08), lineWidth: 0.5))
+            
+            // Highlights
+            RoundedRectangle(cornerRadius: size*0.12)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                .frame(width: size*1.9, height: size*0.6)
+            
+            // Ammo badge
+            Text("\(gun.ammo)")
+                .font(.system(size: size*0.32, weight: .heavy, design: .rounded))
+                .foregroundColor(.white)
+                .shadow(color: .black.opacity(0.6), radius: 1, x: 1, y: 1)
+                .offset(x: size*1.28, y: -size*0.05)
+            
+            // Muzzle flash (appears to the right)
+            ZStack {
+                Circle()
+                    .fill(RadialGradient(gradient: Gradient(colors: [Color.yellow, Color.orange, Color.red.opacity(0.9)]), center: .center, startRadius: 0, endRadius: size*0.4))
+                    .frame(width: size*0.8 * flashScale, height: size*0.6 * flashScale)
+                    .blendMode(.screen)
+                Triangle()
+                    .fill(Color.orange)
+                    .frame(width: size*0.5 * flashScale, height: size*0.3 * flashScale)
+                    .offset(x: size*0.45 * flashScale)
+                    .rotationEffect(.degrees(-15))
+            }
+            .offset(x: size*1.62, y: 0)
+            .opacity(flashOpacity)
+            .allowsHitTesting(false)
+            .animation(.easeOut(duration: 0.12), value: flashOpacity)
         }
-        .scaleEffect(pulse ? 1.05 : 1.0)
-        .onAppear { withAnimation(.easeInOut(duration:1.2).repeatForever()) { pulse = true } }
+        .onChange(of: isFiring) { newValue in
+            if newValue {
+                flashScale = 1.0
+                flashOpacity = 1.0
+                // decay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) {
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        flashOpacity = 0.0
+                        flashScale = 0.6
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -207,6 +286,13 @@ struct ContentView: View {
     @State private var showMilestone = false
     @State private var hitExplosions: [Explosion] = []
     @StateObject private var coinManager = CoinManager()
+    
+    // muzzle flash trigger for HUD gun
+    @State private var hudGunFiring = false
+    
+    // sound mute stored persistently
+    @AppStorage("Muted") private var isMuted: Bool = false
+    
     private let timer = Timer.publish(every: 1/45, on: .main, in: .common).autoconnect()
     
     enum GameState { case settings, ready, playing, gameOver }
@@ -217,10 +303,10 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            // ✨ LIVE THEME BACKGROUND — CHANGES WHEN YOU SELECT!
+            // Theme background
             selectedTheme.gradient.ignoresSafeArea()
             
-            // Decorations match theme
+            // Decorations
             if selectedTheme == .theme1 || selectedTheme == .theme5 {
                 Circle().fill(Color.yellow.opacity(0.9)).frame(width: AdaptiveScreen.scale(55))
                     .position(x: AdaptiveScreen.width - AdaptiveScreen.scale(60), y: AdaptiveScreen.scale(70))
@@ -228,19 +314,22 @@ struct ContentView: View {
                 Circle().fill(Color(red:1.0, green:0.85, blue:0.20).opacity(0.85)).frame(width: AdaptiveScreen.scale(55))
                     .position(x: AdaptiveScreen.width - AdaptiveScreen.scale(60), y: AdaptiveScreen.scale(70))
             }
-            Ellipse().fill(Color.white.opacity(0.15)).frame(width: AdaptiveScreen.scale(80), height: AdaptiveScreen.scale(35))
+            Ellipse().fill(Color.white.opacity(0.12)).frame(width: AdaptiveScreen.scale(80), height: AdaptiveScreen.scale(35))
                 .position(x: AdaptiveScreen.scale(120), y: AdaptiveScreen.scale(110))
             
-            ForEach(powerUps) { Realistic3DGun(gun: $0.gun, size: AdaptiveScreen.gunSize).position(x: $0.x, y: $0.y) }
+            // Active game layers
+            ForEach(powerUps) { Realistic3DGun(gun: $0.gun, size: AdaptiveScreen.gunSize) .position(x: $0.x, y: $0.y) }
             ForEach(pipes) { if !$0.destroyed { BambooPipeView(pipe: $0, gapHeight: AdaptiveScreen.gapHeight(for: selectedDifficulty.pipeGapRatio), bypass: bypassMode) } }
             ForEach(bullets) { BulletView(b: $0, color: activeGun.baseColor) }
             ForEach(hitExplosions) { Circle().fill(activeGun.baseColor.opacity($0.opacity)).frame(width: AdaptiveScreen.scale(40)).blur(radius:6).position(x: $0.x, y: $0.y) }
             
+            // Player
             if gameState == .playing || gameState == .ready || gameState == .gameOver {
                 AnimatedAnimalView(type: selectedCharacter, wingPhase: wingPhase, fallingAngle: min(max(Double(birdVelocity/15)*25, -25), 25))
                     .position(x: AdaptiveScreen.birdX, y: birdY)
             }
             
+            // Milestone banner
             if showMilestone {
                 Text("🦅 SUPER SCORE! 🦅")
                     .font(.system(size: AdaptiveScreen.scale(28), weight: .heavy))
@@ -250,37 +339,60 @@ struct ContentView: View {
                     .onAppear { DispatchQueue.main.asyncAfter(deadline: .now()+1.5) { showMilestone = false } }
             }
             
+            // HUD + UI stack
             VStack {
                 if gameState == .playing {
                     HStack {
-                        HStack(spacing:4) {
-                            Realistic3DGun(gun: activeGun, size: AdaptiveScreen.scale(28))
+                        // Left: gun + ammo
+                        HStack(spacing: 8) {
+                            Realistic3DGun(gun: activeGun, size: AdaptiveScreen.scale(28), isFiring: hudGunFiring)
+                                .frame(width: AdaptiveScreen.scale(28)*1.9, height: AdaptiveScreen.scale(28)*0.6)
                             Text("×\(ammoCount)")
                                 .font(.system(size: AdaptiveScreen.scale(16), weight: .bold))
                                 .foregroundColor(ammoCount>0 ? selectedTheme.accentColor : selectedTheme.secondaryText)
                                 .shadow(color: .black.opacity(0.5), radius:1)
                         }
+                        
                         Spacer()
-                        HStack(spacing:4) {
-                            Image(systemName: "circle.fill").foregroundColor(.yellow).font(.system(size: AdaptiveScreen.scale(18)))
-                            Text("\(coinManager.totalCoins)")
-                                .font(.system(size: AdaptiveScreen.scale(18), weight: .bold))
-                                .foregroundColor(.yellow)
-                                .shadow(color: .black.opacity(0.5), radius:1)
+                        
+                        // Center: coins and score
+                        HStack(spacing: 16) {
+                            HStack(spacing:4) {
+                                Image(systemName: "circle.fill").foregroundColor(.yellow).font(.system(size: AdaptiveScreen.scale(18)))
+                                Text("\(coinManager.totalCoins)")
+                                    .font(.system(size: AdaptiveScreen.scale(18), weight: .bold))
+                                    .foregroundColor(.yellow)
+                                    .shadow(color: .black.opacity(0.5), radius:1)
+                            }
+                            
+                            Text("\(score)")
+                                .font(.system(size: AdaptiveScreen.scale(50), weight: .heavy))
+                                .foregroundColor(selectedTheme.primaryText)
+                                .shadow(color: .black.opacity(0.3), radius:3)
                         }
+                        
                         Spacer()
-                        Text("\(score)")
-                            .font(.system(size: AdaptiveScreen.scale(50), weight: .heavy))
-                            .foregroundColor(selectedTheme.primaryText)
-                            .shadow(color: .black.opacity(0.3), radius:3)
-                        Spacer()
-                        Button { bypassMode.toggle(); SoundManager.shared.playSelect() } label: {
-                            Image(systemName: bypassMode ? "shield.fill" : "shield")
-                                .font(.system(size: AdaptiveScreen.scale(22)))
-                                .foregroundColor(bypassMode ? .green : selectedTheme.primaryText)
+                        
+                        // Right: bypass toggle + mute toggle
+                        HStack(spacing: 10) {
+                            Button { bypassMode.toggle(); SoundManager.shared.playSelect() } label: {
+                                Image(systemName: bypassMode ? "shield.fill" : "shield")
+                                    .font(.system(size: AdaptiveScreen.scale(22)))
+                                    .foregroundColor(bypassMode ? .green : selectedTheme.primaryText)
+                            }
+                            Button {
+                                isMuted.toggle()
+                                UserDefaults.standard.set(isMuted, forKey: "Muted")
+                                if !isMuted { SoundManager.shared.playSelect() }
+                            } label: {
+                                Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                                    .font(.system(size: AdaptiveScreen.scale(20)))
+                                    .foregroundColor(selectedTheme.primaryText)
+                            }
                         }
                     }
                     .padding(.top, AdaptiveScreen.scale(40)).padding(.horizontal)
+                    
                     if ammoCount > 0 {
                         Text("🔥 AUTO-FIRE ACTIVE!")
                             .font(.system(size: AdaptiveScreen.scale(13), weight: .bold))
@@ -289,11 +401,15 @@ struct ContentView: View {
                             .padding(.top,2)
                     }
                 }
+                
                 Spacer()
+                
+                // Bottom panels: settings / ready / gameOver
                 switch gameState {
                 case .settings:
-                    SettingsView(char: $selectedCharacter, diff: $selectedDifficulty, theme: $selectedTheme, start: {
+                    SettingsView(char: $selectedCharacter, diff: $selectedDifficulty, theme: $selectedTheme, muted: $isMuted, start: {
                         UserDefaults.standard.set(selectedTheme.rawValue, forKey: "SelectedTheme")
+                        UserDefaults.standard.set(isMuted, forKey: "Muted")
                         gameState = .ready
                     })
                 case .ready:
@@ -305,39 +421,46 @@ struct ContentView: View {
                 }
             }
         }
-        .onTapGesture { if gameState == .playing { jump() } else if gameState == .ready || gameState == .gameOver { startGame() } }
+        .onTapGesture {
+            if gameState == .playing { jump() }
+            else if gameState == .ready || gameState == .gameOver { startGame() }
+        }
         .onReceive(timer) { _ in
-            if gameState == .playing { updateGame(); wingPhase += 0.25; hitExplosions.indices.reversed().forEach { hitExplosions[$0].opacity -= 0.08 }; hitExplosions.removeAll { $0.opacity <= 0 } }
+            if gameState == .playing {
+                updateGame()
+                wingPhase += 0.25
+                hitExplosions.indices.reversed().forEach { hitExplosions[$0].opacity -= 0.08 }
+                hitExplosions.removeAll { $0.opacity <= 0 }
+            }
         }
     }
     
     // Helper: determine whether there is a pipe in the firing zone (in front of bird)
     func canFireNow() -> Bool {
-        // Firing zone: any non-destroyed pipe that comes close enough ahead of the bird's X.
-        // Tune margins to your liking; here we allow pipes that are between birdX and (birdX + 220 pts)
         let forwardZoneMaxX = AdaptiveScreen.birdX + AdaptiveScreen.scale(220)
         return pipes.contains { pipe in
             guard !pipe.destroyed else { return false }
             let pipeLeft = pipe.x
             let pipeRight = pipe.x + AdaptiveScreen.pipeWidth
-            // Check if pipe intersects the forward zone
             return pipeRight >= AdaptiveScreen.birdX && pipeLeft <= forwardZoneMaxX
         }
     }
     
     func startGame() {
-        gameState = .playing; birdY = AdaptiveScreen.height/2; prevBirdY = birdY; birdVelocity = 0
+        gameState = .playing
+        birdY = AdaptiveScreen.height/2
+        prevBirdY = birdY
+        birdVelocity = 0
         pipes.removeAll(); bullets.removeAll(); powerUps.removeAll(); hitExplosions.removeAll()
         score = 0; ammoCount = 0; wingPhase = 0; showMilestone = false; activeGun = .green
         coinManager.sessionEarnedCoins = 0; HighScoreManager.shared.resetMilestone(); stopAutoFire(); addPipe()
     }
     func jump() { birdVelocity = selectedCharacter.jumpStrength; SoundManager.shared.playJump(selectedCharacter) }
     
-    // Auto-fire now only consumes ammo and creates bullets when canFireNow() is true.
+    // Auto-fire only consumes ammo and emits bullets when a pipe is present
     func startAutoFire() {
         stopAutoFire()
-        // Keep a scheduled timer but only fire when canFireNow() is true and other conditions match.
-        autoFireTimer = Timer.scheduledTimer(withTimeInterval:0.20, repeats:true) { _ in
+        autoFireTimer = Timer.scheduledTimer(withTimeInterval: 0.18, repeats: true) { _ in
             if gameState != .playing {
                 stopAutoFire()
                 return
@@ -346,24 +469,34 @@ struct ContentView: View {
                 stopAutoFire()
                 return
             }
-            // Only fire when a pipe is present in the firing zone.
             if canFireNow() {
-                // Fire a bullet
+                // trigger muzzle flash for HUD gun
+                hudGunFiring = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) { hudGunFiring = false }
+                
                 ammoCount -= 1
                 bullets.append(Bullet(x: AdaptiveScreen.birdX + AdaptiveScreen.scale(32), y: birdY))
                 SoundManager.shared.playShoot()
             } else {
-                // No pipe in the firing zone — do not consume ammo.
-                // Wait for next tick where a pipe may arrive.
+                // wait until pipe is in zone; don't consume ammo
             }
         }
     }
     func stopAutoFire() { autoFireTimer?.invalidate(); autoFireTimer = nil }
     
     func updateGame() {
-        prevBirdY = birdY; birdVelocity += Difficulty.normalGravity; birdY += birdVelocity
-        if birdY > AdaptiveScreen.height - AdaptiveScreen.groundOffset { birdY = AdaptiveScreen.height - AdaptiveScreen.groundOffset; if !bypassMode { gameOver() }; return }
-        if birdY < AdaptiveScreen.ceilingOffset { birdY = AdaptiveScreen.ceilingOffset; birdVelocity = 0 }
+        prevBirdY = birdY
+        birdVelocity += Difficulty.normalGravity
+        birdY += birdVelocity
+        if birdY > AdaptiveScreen.height - AdaptiveScreen.groundOffset {
+            birdY = AdaptiveScreen.height - AdaptiveScreen.groundOffset
+            if !bypassMode { gameOver() }
+            return
+        }
+        if birdY < AdaptiveScreen.ceilingOffset {
+            birdY = AdaptiveScreen.ceilingOffset
+            birdVelocity = 0
+        }
         pipes.indices.forEach { pipes[$0].x -= selectedDifficulty.pipeSpeed }
         bullets.indices.forEach { bullets[$0].x += 14 }
         powerUps.indices.forEach { powerUps[$0].x -= selectedDifficulty.pipeSpeed }
@@ -386,14 +519,23 @@ struct ContentView: View {
             for pi in pipes.indices.reversed() where !pipes[pi].destroyed {
                 let b = bullets[bi], p = pipes[pi]
                 if b.x > p.x && b.x < p.x + AdaptiveScreen.pipeWidth {
-                    pipes[pi].destroyed = true; hitExplosions.append(Explosion(x: b.x, y: b.y)); bullets.remove(at: bi); score += 3; SoundManager.shared.playExplode(); break
+                    pipes[pi].destroyed = true
+                    hitExplosions.append(Explosion(x: b.x, y: b.y))
+                    bullets.remove(at: bi)
+                    score += 3
+                    SoundManager.shared.playExplode()
+                    break
                 }
             }
         }
         for pi in powerUps.indices.reversed() {
             let pu = powerUps[pi]
             if hypot(AdaptiveScreen.birdX - pu.x, birdY - pu.y) < hitR + AdaptiveScreen.gunSize/2 {
-                powerUps.remove(at: pi); SoundManager.shared.playPickup(); ammoCount = pu.gun.ammo; activeGun = pu.gun; startAutoFire()
+                powerUps.remove(at: pi)
+                SoundManager.shared.playPickup()
+                ammoCount = pu.gun.ammo
+                activeGun = pu.gun
+                startAutoFire()
             }
         }
         for pi in pipes.indices where !pipes[pi].destroyed && !bypassMode {
@@ -402,11 +544,19 @@ struct ContentView: View {
             let pipeL = p.x, pipeR = p.x + AdaptiveScreen.pipeWidth
             let birdR = AdaptiveScreen.birdX + hitR
             if birdR > pipeL && birdL < pipeR {
-                if prevBirdY - hitR < gapTop || prevBirdY + hitR > gapBottom || birdY - hitR < gapTop || birdY + hitR > gapBottom { gameOver(); return }
+                if prevBirdY - hitR < gapTop || prevBirdY + hitR > gapBottom || birdY - hitR < gapTop || birdY + hitR > gapBottom {
+                    gameOver()
+                    return
+                }
             }
             if !p.passed && pipeR < AdaptiveScreen.birdX {
-                pipes[pi].passed = true; score += 1; SoundManager.shared.playScore(selectedCharacter)
-                if HighScoreManager.shared.checkMilestone(score) { showMilestone = true; SoundManager.shared.playMilestone() }
+                pipes[pi].passed = true
+                score += 1
+                SoundManager.shared.playScore(selectedCharacter)
+                if HighScoreManager.shared.checkMilestone(score) {
+                    showMilestone = true
+                    SoundManager.shared.playMilestone()
+                }
                 if Double.random(in: 0...1) < 0.22 {
                     let randomGun = GunType.allCases.randomElement()!
                     powerUps.append(PowerUp(x: AdaptiveScreen.width + AdaptiveScreen.scale(60), y: CGFloat.random(in: AdaptiveScreen.scale(150)...AdaptiveScreen.height-AdaptiveScreen.scale(150)), gun: randomGun))
@@ -415,8 +565,11 @@ struct ContentView: View {
         }
     }
     func gameOver() {
-        gameState = .gameOver; stopAutoFire(); SoundManager.shared.playGameOver(selectedCharacter)
-        HighScoreManager.shared.saveHighScore(selectedDifficulty, score); coinManager.addCoins(from: score)
+        gameState = .gameOver
+        stopAutoFire()
+        SoundManager.shared.playGameOver(selectedCharacter)
+        HighScoreManager.shared.saveHighScore(selectedDifficulty, score)
+        coinManager.addCoins(from: score)
     }
 }
 
@@ -506,18 +659,19 @@ struct Triangle: Shape {
 struct BulletView: View {
     let b: ContentView.Bullet; let color: Color
     var body: some View {
-        Circle().fill(RadialGradient(colors: [color.opacity(0.8), color], center: .center, startRadius:0, endRadius: AdaptiveScreen.bulletSize/2))
+        Circle().fill(RadialGradient(colors: [color.opacity(0.9), color], center: .center, startRadius:0, endRadius: AdaptiveScreen.bulletSize/2))
             .frame(width: AdaptiveScreen.bulletSize)
-            .shadow(color: color, radius:3)
+            .shadow(color: color.opacity(0.6), radius:3)
             .position(x: b.x, y: b.y)
     }
 }
 
-// MARK: - 📋 UI SCREENS WITH THEME SELECTOR
+// MARK: - 📋 UI SCREENS WITH THEME SELECTOR (mute added)
 struct SettingsView: View {
     @Binding var char: CharacterType
     @Binding var diff: Difficulty
     @Binding var theme: GameTheme
+    @Binding var muted: Bool
     let start: () -> Void
     let s = AdaptiveScreen.scale
     
@@ -587,6 +741,26 @@ struct SettingsView: View {
                     }
                 }
             }
+            
+            // Sound mute toggle
+            HStack {
+                Text("🔊 Sound").font(.system(size: s(16), weight: .bold)).foregroundColor(theme.primaryText)
+                Spacer()
+                Toggle(isOn: $muted) {
+                    Text(muted ? "Muted" : "On")
+                        .font(.system(size: s(14), weight: .semibold))
+                        .foregroundColor(theme.secondaryText)
+                }
+                .labelsHidden()
+                .onChange(of: muted) { newValue in
+                    UserDefaults.standard.set(newValue, forKey: "Muted")
+                    if !newValue { SoundManager.shared.playSelect() }
+                }
+            }
+            .padding(.horizontal, s(6))
+            .padding(.vertical, s(10))
+            .background(Color.white.opacity(0.06))
+            .cornerRadius(s(10))
         }
         .padding(.horizontal, s(15))
         
