@@ -16,7 +16,7 @@ enum Difficulty: String, CaseIterable, Identifiable {
     case easy = "Easy", medium = "Medium", expert = "Expert"
     var id: String { rawValue }
     var pipeSpeed: CGFloat { [.easy:2.0, .medium:3.0, .expert:4.0][self]! }
-    var pipeGapRatio: CGFloat { [.easy:0.49, .medium:0.42, .expert:0.35][self]! }
+    var pipeGapRatio: CGFloat { [.easy:0.49, .medium:0.42, .expert:0.37][self]! }
     static let normalGravity: CGFloat = 0.40
 }
 
