@@ -1,5 +1,3 @@
-
-
 import SwiftUI
 import AVFoundation
 import AudioToolbox
@@ -80,6 +78,20 @@ enum GameTheme: String, CaseIterable, Identifiable {
         case .theme4: return Color(red:1.0, green:0.8, blue:0.2)
         case .theme5: return Color(red:0.2, green:0.5, blue:1.0)
         }
+    }
+    
+    // NEW: dynamic text colors for primary and secondary usage
+    var primaryText: Color {
+        switch self {
+        case .theme1: return .white
+        case .theme2: return Color(red: 0.95, green: 0.85, blue: 1.0)
+        case .theme3: return Color(red: 0.12, green: 0.12, blue: 0.28)
+        case .theme4: return Color(red: 1.0, green: 0.92, blue: 0.65)
+        case .theme5: return Color(red: 0.05, green: 0.06, blue: 0.18)
+        }
+    }
+    var secondaryText: Color {
+        primaryText.opacity(0.82)
     }
 }
 
@@ -232,7 +244,7 @@ struct ContentView: View {
             if showMilestone {
                 Text("🦅 SUPER SCORE! 🦅")
                     .font(.system(size: AdaptiveScreen.scale(28), weight: .heavy))
-                    .foregroundColor(selectedTheme.accentColor)
+                    .foregroundColor(selectedTheme.primaryText)
                     .shadow(color: .orange, radius:4)
                     .transition(.scale.combined(with: .opacity))
                     .onAppear { DispatchQueue.main.asyncAfter(deadline: .now()+1.5) { showMilestone = false } }
@@ -243,32 +255,53 @@ struct ContentView: View {
                     HStack {
                         HStack(spacing:4) {
                             Realistic3DGun(gun: activeGun, size: AdaptiveScreen.scale(28))
-                            Text("×\(ammoCount)").font(.system(size: AdaptiveScreen.scale(16), weight: .bold)).foregroundColor(ammoCount>0 ? selectedTheme.accentColor : .gray).shadow(color: .black.opacity(0.5), radius:1)
+                            Text("×\(ammoCount)")
+                                .font(.system(size: AdaptiveScreen.scale(16), weight: .bold))
+                                .foregroundColor(ammoCount>0 ? selectedTheme.accentColor : selectedTheme.secondaryText)
+                                .shadow(color: .black.opacity(0.5), radius:1)
                         }
                         Spacer()
                         HStack(spacing:4) {
                             Image(systemName: "circle.fill").foregroundColor(.yellow).font(.system(size: AdaptiveScreen.scale(18)))
-                            Text("\(coinManager.totalCoins)").font(.system(size: AdaptiveScreen.scale(18), weight: .bold)).foregroundColor(.yellow).shadow(color: .black.opacity(0.5), radius:1)
+                            Text("\(coinManager.totalCoins)")
+                                .font(.system(size: AdaptiveScreen.scale(18), weight: .bold))
+                                .foregroundColor(.yellow)
+                                .shadow(color: .black.opacity(0.5), radius:1)
                         }
                         Spacer()
-                        Text("\(score)").font(.system(size: AdaptiveScreen.scale(50), weight: .heavy)).foregroundColor(selectedTheme.accentColor).shadow(color: .black.opacity(0.3), radius:3)
+                        Text("\(score)")
+                            .font(.system(size: AdaptiveScreen.scale(50), weight: .heavy))
+                            .foregroundColor(selectedTheme.primaryText)
+                            .shadow(color: .black.opacity(0.3), radius:3)
                         Spacer()
                         Button { bypassMode.toggle(); SoundManager.shared.playSelect() } label: {
-                            Image(systemName: bypassMode ? "shield.fill" : "shield").font(.system(size: AdaptiveScreen.scale(22))).foregroundColor(bypassMode ? .green : selectedTheme.accentColor)
+                            Image(systemName: bypassMode ? "shield.fill" : "shield")
+                                .font(.system(size: AdaptiveScreen.scale(22)))
+                                .foregroundColor(bypassMode ? .green : selectedTheme.primaryText)
                         }
                     }
                     .padding(.top, AdaptiveScreen.scale(40)).padding(.horizontal)
-                    if ammoCount > 0 { Text("🔥 AUTO-FIRE ACTIVE!").font(.system(size: AdaptiveScreen.scale(13), weight: .bold)).foregroundColor(activeGun.lightColor).shadow(color: .black.opacity(0.5), radius:1).padding(.top,2) }
+                    if ammoCount > 0 {
+                        Text("🔥 AUTO-FIRE ACTIVE!")
+                            .font(.system(size: AdaptiveScreen.scale(13), weight: .bold))
+                            .foregroundColor(activeGun.lightColor)
+                            .shadow(color: .black.opacity(0.5), radius:1)
+                            .padding(.top,2)
+                    }
                 }
                 Spacer()
                 switch gameState {
-                case .settings: SettingsView(char: $selectedCharacter, diff: $selectedDifficulty, theme: $selectedTheme, start: {
-                    UserDefaults.standard.set(selectedTheme.rawValue, forKey: "SelectedTheme")
-                    gameState = .ready
-                })
-                case .ready: ReadyView(char: selectedCharacter, diff: selectedDifficulty, theme: selectedTheme, start: startGame)
-                case .playing: EmptyView()
-                case .gameOver: GameOverView(score: score, diff: selectedDifficulty, theme: selectedTheme, earnedCoins: coinManager.sessionEarnedCoins, restart: startGame, settings: { gameState = .settings })
+                case .settings:
+                    SettingsView(char: $selectedCharacter, diff: $selectedDifficulty, theme: $selectedTheme, start: {
+                        UserDefaults.standard.set(selectedTheme.rawValue, forKey: "SelectedTheme")
+                        gameState = .ready
+                    })
+                case .ready:
+                    ReadyView(char: selectedCharacter, diff: selectedDifficulty, theme: selectedTheme, start: startGame)
+                case .playing:
+                    EmptyView()
+                case .gameOver:
+                    GameOverView(score: score, diff: selectedDifficulty, theme: selectedTheme, earnedCoins: coinManager.sessionEarnedCoins, restart: startGame, settings: { gameState = .settings })
                 }
             }
         }
@@ -459,7 +492,8 @@ struct SettingsView: View {
             // THEME SELECTOR — NEW!
             VStack(spacing: s(10)) {
                 Text("🎨 SELECT THEME")
-                    .font(.system(size: s(18), weight: .bold)).foregroundColor(.white)
+                    .font(.system(size: s(18), weight: .bold))
+                    .foregroundColor(theme.primaryText)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: s(10)) {
                         ForEach(GameTheme.allCases) { t in
@@ -467,7 +501,7 @@ struct SettingsView: View {
                                 VStack(spacing: 4) {
                                     Text(String(t.rawValue.split(separator: ". ").last!))
                                         .font(.system(size: s(12), weight: .bold))
-                                        .foregroundColor(theme == t ? .white : .white.opacity(0.8))
+                                        .foregroundColor(theme == t ? theme.primaryText : theme.secondaryText)
                                     if t == .theme4 { Text("⭐ RECOMMENDED").font(.system(size: s(9))).foregroundColor(.yellow) }
                                 }
                                 .padding(.horizontal, s(12)).padding(.vertical, s(8))
@@ -483,7 +517,8 @@ struct SettingsView: View {
             
             VStack(spacing: s(12)) {
                 Text("⚙️ SELECT CHARACTER")
-                    .font(.system(size: s(18), weight: .bold)).foregroundColor(.white)
+                    .font(.system(size: s(18), weight: .bold))
+                    .foregroundColor(theme.primaryText)
                 HStack(spacing: s(10)) {
                     ForEach(CharacterType.allCases) { c in
                         Button { char = c; SoundManager.shared.playSelect() } label: {
@@ -499,13 +534,14 @@ struct SettingsView: View {
             
             VStack(spacing: s(12)) {
                 Text("🎯 SELECT DIFFICULTY")
-                    .font(.system(size: s(18), weight: .bold)).foregroundColor(.white)
+                    .font(.system(size: s(18), weight: .bold))
+                    .foregroundColor(theme.primaryText)
                 HStack(spacing: s(10)) {
                     ForEach(Difficulty.allCases) { d in
                         Button { diff = d; SoundManager.shared.playSelect() } label: {
                             VStack(spacing: 4) {
                                 Text(d.rawValue).font(.system(size: s(14), weight: .bold))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(theme.primaryText)
                                 Text("🏆 \(HighScoreManager.shared.getHighScore(d))")
                                     .font(.system(size: s(10))).foregroundColor(.yellow)
                             }
@@ -522,7 +558,8 @@ struct SettingsView: View {
         
         Button(action: start) {
             Text("▶️ START GAME")
-                .font(.system(size: s(18), weight: .heavy)).foregroundColor(.white)
+                .font(.system(size: s(18), weight: .heavy))
+                .foregroundColor(.white)
                 .padding(.horizontal, s(35)).padding(.vertical, s(12))
                 .background(Color.green.opacity(0.8)).cornerRadius(s(12))
         }
@@ -537,14 +574,15 @@ struct ReadyView: View {
     var body: some View {
         VStack(spacing: s(12)) {
             Text(String(char.rawValue.prefix(2))).font(.system(size: s(60)))
-            Text("READY TO FLY?").font(.system(size: s(26), weight: .heavy)).foregroundColor(theme.accentColor)
+            Text("READY TO FLY?").font(.system(size: s(26), weight: .heavy)).foregroundColor(theme.primaryText)
             Text("Theme: \(theme.rawValue)")
-                .font(.system(size: s(14))).foregroundColor(.white.opacity(0.8))
+                .font(.system(size: s(14)))
+                .foregroundColor(theme.secondaryText)
             Text("Difficulty: \(diff.rawValue) | 🏆 Best: \(HighScoreManager.shared.getHighScore(diff))")
-                .font(.system(size: s(16))).foregroundColor(.white.opacity(0.8))
+                .font(.system(size: s(16))).foregroundColor(theme.secondaryText)
             Text("👆 Tap = Jump | 🟢3 🟣5 🔴7 Bullets | 🪙 100 Score = 1 Coin")
                 .font(.system(size: s(12), weight: .bold)).foregroundColor(.orange)
-            Text("TAP ANYWHERE TO START").font(.system(size: s(16), weight: .bold)).foregroundColor(.white.opacity(0.9))
+            Text("TAP ANYWHERE TO START").font(.system(size: s(16), weight: .bold)).foregroundColor(theme.secondaryText.opacity(0.95))
         }
         .padding(.bottom, s(80))
     }
@@ -556,21 +594,20 @@ struct GameOverView: View {
     let s = AdaptiveScreen.scale
     var body: some View {
         VStack(spacing: s(10)) {
-            Text("GAME OVER 😢").font(.system(size: s(30), weight: .heavy)).foregroundColor(theme.accentColor)
-            Text("Score: \(score)").font(.system(size: s(36), weight: .bold)).foregroundColor(.white)
+            Text("GAME OVER 😢").font(.system(size: s(30), weight: .heavy)).foregroundColor(theme.primaryText)
+            Text("Score: \(score)").font(.system(size: s(36), weight: .bold)).foregroundColor(theme.secondaryText)
             if earnedCoins > 0 {
                 Text("🪙 +\(earnedCoins) Coins Earned!")
                     .font(.system(size: s(18), weight: .bold)).foregroundColor(.yellow)
             }
             Text("🏆 Best for \(diff.rawValue): \(HighScoreManager.shared.getHighScore(diff))")
                 .font(.system(size: s(18))).foregroundColor(.yellow)
-            Text("TAP ANYWHERE TO PLAY AGAIN").font(.system(size: s(16), weight: .bold)).foregroundColor(.white.opacity(0.9))
+            Text("TAP ANYWHERE TO PLAY AGAIN").font(.system(size: s(16), weight: .bold)).foregroundColor(theme.secondaryText.opacity(0.95))
             Button("⚙️ CHANGE SETTINGS", action: settings)
-                .font(.system(size: s(14))).foregroundColor(.white.opacity(0.8))
+                .font(.system(size: s(14))).foregroundColor(theme.secondaryText)
         }
         .padding(.bottom, s(90))
     }
 }
 
 #Preview { ContentView() }
-

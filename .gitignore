@@ -7,3 +7,6 @@ build/
 build/
 *.xcuserstate
 .DS_Store
+build/
+*.xcuserstate
+.DS_Store
