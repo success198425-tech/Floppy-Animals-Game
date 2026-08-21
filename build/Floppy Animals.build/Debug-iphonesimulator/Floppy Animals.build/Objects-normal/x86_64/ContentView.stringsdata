@@ -1,0 +1,192 @@
+{
+  "source": "/Users/mac/Desktop/Floppy Animals/Floppy Animals/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 170
+        }
+      },
+      {
+        "comment": "",
+        "key": "🦅 SUPER SCORE! 🦅",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 233
+        }
+      },
+      {
+        "comment": "",
+        "key": "🔥 AUTO-FIRE ACTIVE!",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 261
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 254
+        }
+      },
+      {
+        "comment": "",
+        "key": "×%lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 246
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 251
+        }
+      },
+      {
+        "comment": "",
+        "key": "🎨 SELECT THEME",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 461
+        }
+      },
+      {
+        "comment": "",
+        "key": "⭐ RECOMMENDED",
+        "location": {
+          "startingColumn": 60,
+          "startingLine": 471
+        }
+      },
+      {
+        "comment": "",
+        "key": "⚙️ SELECT CHARACTER",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 485
+        }
+      },
+      {
+        "comment": "",
+        "key": "🎯 SELECT DIFFICULTY",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 501
+        }
+      },
+      {
+        "comment": "",
+        "key": "🏆 %lld",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 509
+        }
+      },
+      {
+        "comment": "",
+        "key": "▶️ START GAME",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 524
+        }
+      },
+      {
+        "comment": "",
+        "key": "READY TO FLY?",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 540
+        }
+      },
+      {
+        "comment": "",
+        "key": "Theme: %@",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 541
+        }
+      },
+      {
+        "comment": "",
+        "key": "Difficulty: %@ | 🏆 Best: %lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 543
+        }
+      },
+      {
+        "comment": "",
+        "key": "👆 Tap = Jump | 🟢3 🟣5 🔴7 Bullets | 🪙 100 Score = 1 Coin",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 545
+        }
+      },
+      {
+        "comment": "",
+        "key": "TAP ANYWHERE TO START",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 547
+        }
+      },
+      {
+        "comment": "",
+        "key": "GAME OVER 😢",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 559
+        }
+      },
+      {
+        "comment": "",
+        "key": "Score: %lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 560
+        }
+      },
+      {
+        "comment": "",
+        "key": "🪙 +%lld Coins Earned!",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 562
+        }
+      },
+      {
+        "comment": "",
+        "key": "🏆 Best for %@: %lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 565
+        }
+      },
+      {
+        "comment": "",
+        "key": "TAP ANYWHERE TO PLAY AGAIN",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 567
+        }
+      },
+      {
+        "comment": "",
+        "key": "⚙️ CHANGE SETTINGS",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 568
+        }
+      }
+    ]
+  },
+  "version": 1
+}

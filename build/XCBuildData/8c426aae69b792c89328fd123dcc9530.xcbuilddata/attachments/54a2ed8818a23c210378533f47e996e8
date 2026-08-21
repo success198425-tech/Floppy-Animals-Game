@@ -1,0 +1,38 @@
+{
+  "" : {
+    "diagnostics" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy Animals-master.dia",
+    "emit-module-dependencies" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy Animals-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy Animals-master-emit-module.dia",
+    "swift-dependencies" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy Animals-master.swiftdeps"
+  },
+  "/Users/mac/Desktop/Floppy Animals/Floppy Animals/ContentView.swift" : {
+    "const-values" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/ContentView.d",
+    "diagnostics" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/ContentView.dia",
+    "index-unit-output-path" : "/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/ContentView.o",
+    "llvm-bc" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/ContentView.bc",
+    "object" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/ContentView.o",
+    "swift-dependencies" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/ContentView~partial.swiftmodule"
+  },
+  "/Users/mac/Desktop/Floppy Animals/Floppy Animals/Floppy_AnimalsApp.swift" : {
+    "const-values" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy_AnimalsApp.swiftconstvalues",
+    "dependencies" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy_AnimalsApp.d",
+    "diagnostics" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy_AnimalsApp.dia",
+    "index-unit-output-path" : "/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy_AnimalsApp.o",
+    "llvm-bc" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy_AnimalsApp.bc",
+    "object" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy_AnimalsApp.o",
+    "swift-dependencies" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy_AnimalsApp.swiftdeps",
+    "swiftmodule" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/Floppy_AnimalsApp~partial.swiftmodule"
+  },
+  "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/mac/Desktop/Floppy Animals/build/Floppy Animals.build/Debug-iphonesimulator/Floppy Animals.build/Objects-normal/x86_64/GeneratedAssetSymbols~partial.swiftmodule"
+  }
+}
