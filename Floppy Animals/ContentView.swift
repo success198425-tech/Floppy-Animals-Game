@@ -114,7 +114,7 @@ class SoundManager {
     private func playSound(_ id: UInt32) { AudioServicesPlaySystemSound(id) }
     func playJump(_ c: CharacterType) { playSound([.monkey:1306, .chicken:1315, .bird:1307, .eagle:1318][c]!) }
     func playScore(_ c: CharacterType) { playSound([.monkey:1057, .chicken:1003, .bird:1004, .eagle:1113][c]!) }
-    func playGameOver(_ c: CharacterType) { playSound([.monkey:1053, .chicken:1050, .bird:1052, .eagle:1058][c]!) }
+    func playGameOver(_ c: CharacterType) { playSound([.monkey:1053, .chicken:1050, .bird:1052, .eagle:1051][c]!) }
     func playPickup() { playSound(1025) }
     func playShoot() { playSound(1103) }
     func playExplode() { playSound(1006) }
