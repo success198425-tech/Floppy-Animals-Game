@@ -107,49 +107,297 @@ enum GameTheme: String, CaseIterable, Identifiable {
     var secondaryText: Color { primaryText.opacity(0.82) }
 }
 
-// MARK: - 📏 DYNAMIC SCREEN
+// MARK: - 📏 DYNAMIC ADAPTIVE SCREEN (LANDSCAPE & PORTRAIT SUPPORT)
 
-struct AdaptiveScreen {
-    static var width: CGFloat { UIScreen.main.bounds.width }
-    static var height: CGFloat { UIScreen.main.bounds.height }
-    static var minDim: CGFloat { min(width, height) }
-    static var maxDim: CGFloat { max(width, height) }
-    static var isLandscape: Bool { width > height }
+class AdaptiveScreenManager: NSObject, ObservableObject {
+    @Published var width: CGFloat = UIScreen.main.bounds.width
+    @Published var height: CGFloat = UIScreen.main.bounds.height
     
-    static func scale(_ v: CGFloat) -> CGFloat { v * (minDim / 375) }
-    static func gapHeight(for ratio: CGFloat) -> CGFloat { minDim * ratio }
+    static let shared = AdaptiveScreenManager()
     
-    static let pipeWidth: CGFloat = scale(65)
-    static let hitboxSize: CGFloat = scale(18)
-    static var birdX: CGFloat { scale(isLandscape ? 70 : 85) }
-    static let groundOffset: CGFloat = scale(55)
-    static let ceilingOffset: CGFloat = scale(45)
-    static let bulletSize: CGFloat = scale(12)
-    static let gunSize: CGFloat = scale(48)
-    static let charSize: CGFloat = scale(42)
+    private override init() {
+        super.init()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(updateDimensions),
+            name: UIDevice.orientationDidChangeNotification,
+            object: nil
+        )
+        updateDimensions()
+    }
+    
+    @objc func updateDimensions() {
+        DispatchQueue.main.async {
+            self.width = UIScreen.main.bounds.width
+            self.height = UIScreen.main.bounds.height
+        }
+    }
+    
+    var minDim: CGFloat { min(width, height) }
+    var maxDim: CGFloat { max(width, height) }
+    var isLandscape: Bool { width > height }
+    
+    func scale(_ v: CGFloat) -> CGFloat { v * (minDim / 375) }
+    func gapHeight(for ratio: CGFloat) -> CGFloat { minDim * ratio }
+    
+    var pipeWidth: CGFloat { scale(65) }
+    var hitboxSize: CGFloat { scale(18) }
+    var birdX: CGFloat { scale(isLandscape ? 70 : 85) }
+    var groundOffset: CGFloat { scale(55) }
+    var ceilingOffset: CGFloat { scale(45) }
+    var bulletSize: CGFloat { scale(12) }
+    var gunSize: CGFloat { scale(48) }
+    var charSize: CGFloat { scale(42) }
 }
+
+// Convenience accessor
+let AdaptiveScreen = AdaptiveScreenManager.shared
 
 // MARK: - 🔊 SOUND MANAGER
 
-class SoundManager {
+@MainActor
+final class SoundManager: NSObject {
     static let shared = SoundManager()
-    private init() {
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .duckOthers)
-        try? AVAudioSession.sharedInstance().setActive(true)
+    private let speechSynthesizer = AVSpeechSynthesizer()
+    private var pendingGreeting: DispatchWorkItem?
+    private lazy var greetingVoices: [AVSpeechSynthesisVoice] = {
+        let voices = AVSpeechSynthesisVoice.speechVoices()
+        let lilyVoice = voices.first { voice in
+            voice.name.localizedCaseInsensitiveContains("Lily Ki") && voice.language.hasPrefix("en")
+        }
+        let femaleVoices = voices.filter { voice in
+            voice.language.hasPrefix("en") && voice.gender == .female
+        }
+        let maleVoices = voices.filter { voice in
+            voice.language.hasPrefix("en") && voice.gender == .male
+        }
+        let selectedFemaleVoice = lilyVoice
+            ?? femaleVoices.first(where: { $0.quality == .premium })
+            ?? femaleVoices.first
+            ?? AVSpeechSynthesisVoice(identifier: "com.apple.ttsbundle.Samantha-premium")
+            ?? AVSpeechSynthesisVoice(identifier: "com.apple.ttsbundle.Samantha-compact")
+        let selectedMaleVoice = maleVoices.first(where: { $0.quality == .premium })
+            ?? maleVoices.first
+            ?? AVSpeechSynthesisVoice(identifier: "com.apple.ttsbundle.Alex-premium")
+            ?? AVSpeechSynthesisVoice(identifier: "com.apple.ttsbundle.Alex-compact")
+        return [selectedFemaleVoice, selectedMaleVoice].compactMap { $0 }
+    }()
+    private lazy var fallbackGreetingVoice: AVSpeechSynthesisVoice = AVSpeechSynthesisVoice(language: "en-US")!
+    private let greetings = [
+        "Good job!",
+        "You're amazing!",
+        "You did it!",
+        "Excellent!",
+        "Awesome work!",
+        "Great move!",
+        "Fantastic!",
+        "Nice one!",
+        "You're flying high!",
+        "Keep it up!",
+        "Incredible!",
+        "Super cool!",
+        "You rock!",
+        "Brilliant!",
+        "Way to go!",
+        "Spectacular!",
+        "Outstanding!",
+        "Perfectly done!",
+        "You're on fire!",
+        "Unstoppable!",
+        "Amazing flight!",
+        "Sharp reflexes!",
+        "What a save!",
+        "Brilliant flying!",
+        "Great timing!",
+        "Fantastic reflexes!",
+        "You are incredible!",
+        "That was perfect!",
+        "Beautiful move!",
+        "Strong performance!",
+        "Excellent flying!",
+        "You nailed it!",
+        "What a champion!",
+        "Keep soaring!",
+        "Wonderful control!",
+        "That was smooth!",
+        "Elite move!",
+        "You are a star!",
+        "Top-level flying!",
+        "Great concentration!",
+        "Amazing control!",
+        "That was awesome!",
+        "Brave and bold!",
+        "You are a winner!",
+        "Super performance!",
+        "Perfect reaction!",
+        "Excellent control!",
+        "You are on a roll!",
+        "Fantastic flight!",
+        "Incredible timing!",
+        "What a legend!",
+        "Great confidence!",
+        "That was impressive!",
+        "Superb flying!",
+        "You make it look easy!",
+        "Amazing progress!",
+        "Outstanding control!",
+        "That was a master move!",
+        "You are flying like a champion!",
+        "Brilliant reaction!",
+        "Perfect path!",
+        "Great challenge conquered!",
+        "You are unstoppable today!",
+        "Excellent decision!",
+        "What an incredible move!",
+        "Fantastic focus!",
+        "You are rising higher!",
+        "Great obstacle clear!",
+        "Superstar flying!",
+        "That was skillful!",
+        "Wonderful timing!",
+        "You have got this!",
+        "Amazing achievement!",
+        "Strong and steady!",
+        "Brilliant obstacle clear!",
+        "Perfect flying form!",
+        "You are dominating!",
+        "Great work, pilot!",
+        "Incredible skill!",
+        "That was flawless!",
+        "Keep chasing the high score!",
+        "You are doing fantastic!",
+        "Outstanding reaction!",
+        "Excellent obstacle dodge!",
+        "What a brilliant pilot!",
+        "You are built for this!",
+        "Amazing momentum!",
+        "Great job, superstar!",
+        "That was beautifully done!",
+        "You are breaking records!",
+        "Fantastic obstacle clear!",
+        "Sharp move!",
+        "You are playing brilliantly!",
+        "Perfect focus!",
+        "That was next level!",
+        "Strong flying skills!",
+        "You are a natural!",
+        "Great escape!",
+        "Incredible confidence!",
+        "That was spectacular flying!",
+        "Amazing work, champion!",
+        "You cleared it like a pro!",
+        "Brilliant and fearless!",
+        "Excellent run!",
+        "You are flying beautifully!",
+        "What a fantastic save!",
+        "Keep that energy!",
+        "You are the sky master!",
+        "Perfect obstacle timing!",
+        "Superb performance!",
+        "You are making history!",
+        "Fantastic run!",
+        "That was pure skill!",
+        "Amazing job, pilot!",
+        "You cleared the way!",
+        "Outstanding flight, champion!"
+    ]
+    
+    private override init() {
+        super.init()
+        speechSynthesizer.delegate = self
+        speechSynthesizer.usesApplicationAudioSession = true
+        configureAudioSession()
     }
+    
+    private func configureAudioSession() {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.duckOthers, .defaultToSpeaker])
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("Audio session error: \(error)")
+        }
+    }
+    
     private func playSound(_ id: UInt32) {
         guard !UserDefaults.standard.bool(forKey: "Muted") else { return }
-        AudioServicesPlaySystemSound(id)
+        DispatchQueue.global(qos: .userInitiated).async {
+            AudioServicesPlaySystemSound(id)
+        }
     }
-    func playJump(_ c: CharacterType) { playSound([.monkey:1306, .chicken:1315, .bird:1307, .eagle:1318][c]!) }
-    func playScore(_ c: CharacterType) { playSound([.monkey:1057, .chicken:1003, .bird:1004, .eagle:1113][c]!) }
-    func playGameOver(_ c: CharacterType) { playSound([.monkey:1053, .chicken:1050, .bird:1052, .eagle:1051][c]!) }
-    func playPickup() { playSound(1025) }
-    func playShoot() { playSound(1103) }
-    func playExplode() { playSound(1006) }
-    func playSelect() { playSound(1104) }
-    func playMilestone() { playSound(1325) }
+    
+    func playJump(_ c: CharacterType) {
+        playSound([.monkey:1306, .chicken:1315, .bird:1307, .eagle:1318][c]!)
+    }
+    
+    func playScore(_ c: CharacterType) {
+        playSound([.monkey:1057, .chicken:1003, .bird:1004, .eagle:1113][c]!)
+    }
+    
+    func playGameOver(_ c: CharacterType) {
+        playSound([.monkey:1053, .chicken:1050, .bird:1052, .eagle:1051][c]!)
+    }
+    
+    func playPickup() {
+        playSound(1025)
+    }
+    
+    func playShoot() {
+        playSound(1103)
+    }
+    
+    func playExplode() {
+        playSound(1006)
+    }
+    
+    func playSelect() {
+        playSound(1104)
+    }
+    
+    func playMilestone() {
+        playSound(1325)
+    }
+    
+    func playRandomGreeting() {
+        guard !UserDefaults.standard.bool(forKey: "Muted") else { return }
+        pendingGreeting?.cancel()
+
+        let greetingTask = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            guard !UserDefaults.standard.bool(forKey: "Muted") else { return }
+
+            let greeting = greetings.randomElement() ?? "Good job!"
+            let utterance = AVSpeechUtterance(string: greeting)
+            utterance.voice = greetingVoices.randomElement() ?? fallbackGreetingVoice
+            utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.78
+            utterance.pitchMultiplier = 1.22
+            utterance.volume = 1.0
+            utterance.preUtteranceDelay = 0.02
+            utterance.postUtteranceDelay = 0.12
+
+            do {
+                let session = AVAudioSession.sharedInstance()
+                try session.setCategory(.playback, mode: .default, options: [.duckOthers, .defaultToSpeaker])
+                try session.setActive(true)
+            } catch {
+                print("Greeting audio session error: \(error)")
+            }
+
+            self.speechSynthesizer.speak(utterance)
+        }
+
+        pendingGreeting = greetingTask
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18, execute: greetingTask)
+    }
+
+    func stopGreeting() {
+        pendingGreeting?.cancel()
+        pendingGreeting = nil
+        speechSynthesizer.stopSpeaking(at: .immediate)
+    }
 }
+
+extension SoundManager: AVSpeechSynthesizerDelegate {}
 
 // MARK: - 💾 HIGH SCORE & COIN MANAGER
 
@@ -274,9 +522,12 @@ struct Realistic3DGun: View {
 
 struct AnimatedAnimalView: View {
     let type: CharacterType, wingPhase: Double, fallingAngle: Double
-    let s = AdaptiveScreen.scale
+    @ObservedObject var screen = AdaptiveScreen
+    
     var body: some View {
-        ZStack {
+        let s = screen.scale
+        
+        return ZStack {
             switch type {
             case .monkey:
                 ZStack {
@@ -318,25 +569,29 @@ struct AnimatedAnimalView: View {
 
 struct BambooPipeView: View {
     let pipe: ContentView.Pipe, gapHeight: CGFloat, bypass: Bool
-    let s = AdaptiveScreen.scale, w = AdaptiveScreen.pipeWidth
+    @ObservedObject var screen = AdaptiveScreen
+    
     var body: some View {
+        let s = screen.scale
+        let w = screen.pipeWidth
         let gapTop = pipe.gapCenterY - gapHeight/2
         let bambooGradient = LinearGradient(colors: [
             Color(red:0.76, green:0.87, blue:0.48),
             Color(red:0.62, green:0.77, blue:0.32),
             Color(red:0.76, green:0.87, blue:0.48)
         ], startPoint: .leading, endPoint: .trailing)
-        ZStack {
+        
+        return ZStack {
             VStack(spacing:0) {
                 Rectangle().fill(bambooGradient).frame(width:w, height:gapTop)
                 ForEach(0..<Int(gapTop/40), id:\.self) { _ in Rectangle().fill(Color(red:0.35, green:0.50, blue:0.20)).frame(height:2) }
             }.frame(width:w, height:gapTop).position(x: pipe.x + w/2, y: gapTop/2)
             
             VStack(spacing:0) {
-                ForEach(0..<Int((AdaptiveScreen.maxDim - gapTop - gapHeight)/40), id:\.self) { _ in Rectangle().fill(Color(red:0.35, green:0.50, blue:0.20)).frame(height:2) }
-                Rectangle().fill(bambooGradient).frame(width:w, height: AdaptiveScreen.maxDim - gapTop - gapHeight)
-            }.frame(width:w, height: AdaptiveScreen.maxDim - gapTop - gapHeight)
-                .position(x: pipe.x + w/2, y: gapTop + gapHeight + (AdaptiveScreen.maxDim - gapTop - gapHeight)/2)
+                ForEach(0..<Int((screen.maxDim - gapTop - gapHeight)/40), id:\.self) { _ in Rectangle().fill(Color(red:0.35, green:0.50, blue:0.20)).frame(height:2) }
+                Rectangle().fill(bambooGradient).frame(width:w, height: screen.maxDim - gapTop - gapHeight)
+            }.frame(width:w, height: screen.maxDim - gapTop - gapHeight)
+                .position(x: pipe.x + w/2, y: gapTop + gapHeight + (screen.maxDim - gapTop - gapHeight)/2)
             
             RoundedRectangle(cornerRadius: s(4)).fill(Color(red:0.45, green:0.65, blue:0.25)).frame(width:w+8, height:s(18)).position(x: pipe.x + w/2, y: gapTop)
             RoundedRectangle(cornerRadius: s(4)).fill(Color(red:0.45, green:0.65, blue:0.25)).frame(width:w+8, height:s(18)).position(x: pipe.x + w/2, y: gapTop + gapHeight)
@@ -358,9 +613,11 @@ struct Triangle: Shape {
 
 struct BulletView: View {
     let b: ContentView.Bullet; let color: Color
+    @ObservedObject var screen = AdaptiveScreen
+    
     var body: some View {
-        Circle().fill(RadialGradient(colors: [color.opacity(0.9), color], center: .center, startRadius:0, endRadius: AdaptiveScreen.bulletSize/2))
-            .frame(width: AdaptiveScreen.bulletSize)
+        Circle().fill(RadialGradient(colors: [color.opacity(0.9), color], center: .center, startRadius:0, endRadius: screen.bulletSize/2))
+            .frame(width: screen.bulletSize)
             .shadow(color: color.opacity(0.6), radius:3)
             .position(x: b.x, y: b.y)
     }
@@ -374,10 +631,12 @@ struct DifficultyCard: View {
     let highScore: Int
     let theme: GameTheme
     let action: () -> Void
-    let s = AdaptiveScreen.scale
+    @ObservedObject var screen = AdaptiveScreen
     
     var body: some View {
-        Button(action: action) {
+        let s = screen.scale
+        
+        return Button(action: action) {
             VStack(spacing: 6) {
                 Text(difficulty.rawValue)
                     .font(.system(size: s(15), weight: .bold))
@@ -412,141 +671,162 @@ struct SettingsViewImproved: View {
     @Binding var theme: GameTheme
     @Binding var muted: Bool
     let start: () -> Void
-    let s = AdaptiveScreen.scale
+    @ObservedObject var screen = AdaptiveScreen
     
     var body: some View {
-        VStack(spacing: s(18)) {
-            VStack(spacing: s(10)) {
-                HStack {
-                    Text("🎨 THEME")
-                        .font(.system(size: s(18), weight: .heavy))
-                        .foregroundColor(theme.primaryText)
-                    Spacer()
-                }
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: s(12)) {
-                        ForEach(GameTheme.allCases) { t in
-                            Button { theme = t; SoundManager.shared.playSelect() } label: {
-                                VStack(spacing: 4) {
-                                    Text(String(t.rawValue.split(separator: ". ").last!))
-                                        .font(.system(size: s(12), weight: .bold))
-                                        .foregroundColor(theme == t ? theme.primaryText : theme.secondaryText)
-                                    if t == .theme4 {
-                                        Text("⭐ RECOMMENDED")
-                                            .font(.system(size: s(9)))
-                                            .foregroundColor(.yellow)
+        let s = screen.scale
+        
+        return ZStack {
+            VStack(spacing: 0) {
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: s(18)) {
+                        VStack(spacing: s(10)) {
+                            HStack {
+                                Text("🎨 THEME")
+                                    .font(.system(size: s(18), weight: .heavy))
+                                    .foregroundColor(theme.primaryText)
+                                Spacer()
+                            }
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: s(12)) {
+                                    ForEach(GameTheme.allCases) { t in
+                                        Button { theme = t; SoundManager.shared.playSelect() } label: {
+                                            VStack(spacing: 4) {
+                                                Text(String(t.rawValue.split(separator: ". ").last!))
+                                                    .font(.system(size: s(12), weight: .bold))
+                                                    .foregroundColor(theme == t ? theme.primaryText : theme.secondaryText)
+                                                if t == .theme4 {
+                                                    Text("⭐ RECOMMENDED")
+                                                        .font(.system(size: s(9)))
+                                                        .foregroundColor(.yellow)
+                                                }
+                                            }
+                                            .padding(.horizontal, s(14))
+                                            .padding(.vertical, s(10))
+                                            .background(theme == t ? Color.white.opacity(0.35) : Color.white.opacity(0.12))
+                                            .cornerRadius(s(12))
+                                        }
+                                        .buttonStyle(.plain)
                                     }
                                 }
-                                .padding(.horizontal, s(14))
-                                .padding(.vertical, s(10))
-                                .background(theme == t ? Color.white.opacity(0.35) : Color.white.opacity(0.12))
-                                .cornerRadius(s(12))
                             }
-                            .buttonStyle(.plain)
                         }
-                    }
-                }
-            }
-            
-            VStack(spacing: s(10)) {
-                HStack {
-                    Text("🐾 CHARACTER")
-                        .font(.system(size: s(18), weight: .heavy))
-                        .foregroundColor(theme.primaryText)
-                    Spacer()
-                }
-                HStack(spacing: s(12)) {
-                    ForEach(CharacterType.allCases) { c in
-                        Button { char = c; SoundManager.shared.playSelect() } label: {
-                            Text(String(c.rawValue.prefix(2)))
-                                .font(.system(size: s(32)))
-                                .frame(width: s(70), height: s(80))
-                                .background(char == c ? LinearGradient(colors: [Color.white.opacity(0.4), Color.white.opacity(0.2)], startPoint: .top, endPoint: .bottom) : LinearGradient(colors: [Color.white.opacity(0.12), Color.white.opacity(0.06)], startPoint: .top, endPoint: .bottom))
-                                .cornerRadius(s(14))
-                                .shadow(color: char == c ? Color.white.opacity(0.15) : .clear, radius: char == c ? 6 : 0)
+                        
+                        VStack(spacing: s(10)) {
+                            HStack {
+                                Text("🐾 CHARACTER")
+                                    .font(.system(size: s(18), weight: .heavy))
+                                    .foregroundColor(theme.primaryText)
+                                Spacer()
+                            }
+                            HStack(spacing: s(12)) {
+                                ForEach(CharacterType.allCases) { c in
+                                    Button { char = c; SoundManager.shared.playSelect() } label: {
+                                        Text(String(c.rawValue.prefix(2)))
+                                            .font(.system(size: s(32)))
+                                            .frame(width: s(70), height: s(80))
+                                            .background(char == c ? LinearGradient(colors: [Color.white.opacity(0.4), Color.white.opacity(0.2)], startPoint: .top, endPoint: .bottom) : LinearGradient(colors: [Color.white.opacity(0.12), Color.white.opacity(0.06)], startPoint: .top, endPoint: .bottom))
+                                            .cornerRadius(s(14))
+                                            .shadow(color: char == c ? Color.white.opacity(0.15) : .clear, radius: char == c ? 6 : 0)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
                         }
-                        .buttonStyle(.plain)
+                        
+                        VStack(spacing: s(10)) {
+                            HStack {
+                                Text("🎯 DIFFICULTY")
+                                    .font(.system(size: s(18), weight: .heavy))
+                                    .foregroundColor(theme.primaryText)
+                                Spacer()
+                            }
+                            HStack(spacing: s(12)) {
+                                ForEach(Difficulty.allCases) { d in
+                                    DifficultyCard(
+                                        difficulty: d,
+                                        isSelected: diff == d,
+                                        highScore: HighScoreManager.shared.getHighScore(d),
+                                        theme: theme,
+                                        action: { diff = d; SoundManager.shared.playSelect() }
+                                    )
+                                }
+                            }
+                        }
+                        
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("🔊 SOUND")
+                                    .font(.system(size: s(16), weight: .bold))
+                                    .foregroundColor(theme.primaryText)
+                                Text(muted ? "Effects are muted" : "Sound effects on")
+                                    .font(.system(size: s(11)))
+                                    .foregroundColor(theme.secondaryText)
+                            }
+                            Spacer()
+                            Toggle(isOn: $muted) {
+                                Text(muted ? "Off" : "On")
+                                    .font(.system(size: s(14), weight: .semibold))
+                            }
+                            .labelsHidden()
+                            .onChange(of: muted) { newValue in
+                                UserDefaults.standard.set(newValue, forKey: "Muted")
+                                if !newValue { SoundManager.shared.playSelect() }
+                            }
+                        }
+                        .padding(.horizontal, s(16))
+                        .padding(.vertical, s(14))
+                        .background(Color.white.opacity(0.06))
+                        .cornerRadius(s(14))
+                        
+                        Spacer()
+                            .frame(height: s(120))
                     }
+                    .padding(.horizontal, s(18))
+                    .padding(.vertical, s(12))
                 }
-            }
-            
-            VStack(spacing: s(10)) {
-                HStack {
-                    Text("🎯 DIFFICULTY")
-                        .font(.system(size: s(18), weight: .heavy))
-                        .foregroundColor(theme.primaryText)
-                    Spacer()
-                }
-                HStack(spacing: s(12)) {
-                    ForEach(Difficulty.allCases) { d in
-                        DifficultyCard(
-                            difficulty: d,
-                            isSelected: diff == d,
-                            highScore: HighScoreManager.shared.getHighScore(d),
-                            theme: theme,
-                            action: { diff = d; SoundManager.shared.playSelect() }
-                        )
-                    }
-                }
-            }
-            
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("🔊 SOUND")
-                        .font(.system(size: s(16), weight: .bold))
-                        .foregroundColor(theme.primaryText)
-                    Text(muted ? "Effects are muted" : "Sound effects on")
-                        .font(.system(size: s(11)))
-                        .foregroundColor(theme.secondaryText)
-                }
+                
                 Spacer()
-                Toggle(isOn: $muted) {
-                    Text(muted ? "Off" : "On")
-                        .font(.system(size: s(14), weight: .semibold))
-                }
-                .labelsHidden()
-                .onChange(of: muted) { newValue in
-                    UserDefaults.standard.set(newValue, forKey: "Muted")
-                    if !newValue { SoundManager.shared.playSelect() }
-                }
             }
-            .padding(.horizontal, s(16))
-            .padding(.vertical, s(14))
-            .background(Color.white.opacity(0.06))
-            .cornerRadius(s(14))
-        }
-        .padding(.horizontal, s(18))
-        
-        Button(action: start) {
-            HStack(spacing: s(10)) {
-                Text("▶️")
-                    .font(.system(size: s(20)))
-                Text("START GAME")
-                    .font(.system(size: s(18), weight: .heavy))
+            
+            VStack {
+                Spacer()
+                
+                Button(action: start) {
+                    HStack(spacing: s(10)) {
+                        Text("▶️")
+                            .font(.system(size: s(20)))
+                        Text("START GAME")
+                            .font(.system(size: s(18), weight: .heavy))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, s(30))
+                    .padding(.vertical, s(14))
+                    .background(
+                        LinearGradient(
+                            colors: [Color(red:0.20, green:0.75, blue:0.30), Color(red:0.10, green:0.55, blue:0.15)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(s(16))
+                    .shadow(color: Color.green.opacity(0.35), radius: 8, x: 0, y: 4)
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, s(24))
+                .padding(.vertical, s(16))
+                .background(Color.black.opacity(0.3))
             }
-            .foregroundColor(.white)
-            .padding(.horizontal, s(40))
-            .padding(.vertical, s(14))
-            .background(
-                LinearGradient(
-                    colors: [Color(red:0.20, green:0.75, blue:0.30), Color(red:0.10, green:0.55, blue:0.15)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .cornerRadius(s(16))
-            .shadow(color: Color.green.opacity(0.35), radius: 8, x: 0, y: 4)
         }
-        .buttonStyle(.plain)
-        .padding(.top, s(8))
     }
 }
 
 // MARK: - ✅ MAIN GAME
 
 struct ContentView: View {
-    @State private var birdY = AdaptiveScreen.height/2
-    @State private var prevBirdY = AdaptiveScreen.height/2
+    @State private var birdY: CGFloat = 0
+    @State private var prevBirdY: CGFloat = 0
     @State private var birdVelocity: CGFloat = 0
     @State private var pipes: [Pipe] = []
     @State private var bullets: [Bullet] = []
@@ -566,6 +846,7 @@ struct ContentView: View {
     @StateObject private var coinManager = CoinManager()
     @State private var hudGunFiring = false
     @AppStorage("Muted") private var isMuted: Bool = false
+    @ObservedObject var screen = AdaptiveScreenManager.shared
     
     private let timer = Timer.publish(every: 1/45, on: .main, in: .common).autoconnect()
     
@@ -580,28 +861,28 @@ struct ContentView: View {
             selectedTheme.gradient.ignoresSafeArea()
             
             if selectedTheme == .theme1 || selectedTheme == .theme5 {
-                Circle().fill(Color.yellow.opacity(0.9)).frame(width: AdaptiveScreen.scale(55))
-                    .position(x: AdaptiveScreen.width - AdaptiveScreen.scale(60), y: AdaptiveScreen.scale(70))
+                Circle().fill(Color.yellow.opacity(0.9)).frame(width: screen.scale(55))
+                    .position(x: screen.width - screen.scale(60), y: screen.scale(70))
             } else if selectedTheme == .theme4 {
-                Circle().fill(Color(red:1.0, green:0.85, blue:0.20).opacity(0.85)).frame(width: AdaptiveScreen.scale(55))
-                    .position(x: AdaptiveScreen.width - AdaptiveScreen.scale(60), y: AdaptiveScreen.scale(70))
+                Circle().fill(Color(red:1.0, green:0.85, blue:0.20).opacity(0.85)).frame(width: screen.scale(55))
+                    .position(x: screen.width - screen.scale(60), y: screen.scale(70))
             }
-            Ellipse().fill(Color.white.opacity(0.12)).frame(width: AdaptiveScreen.scale(80), height: AdaptiveScreen.scale(35))
-                .position(x: AdaptiveScreen.scale(120), y: AdaptiveScreen.scale(110))
+            Ellipse().fill(Color.white.opacity(0.12)).frame(width: screen.scale(80), height: screen.scale(35))
+                .position(x: screen.scale(120), y: screen.scale(110))
             
-            ForEach(powerUps) { Realistic3DGun(gun: $0.gun, size: AdaptiveScreen.gunSize).position(x: $0.x, y: $0.y) }
-            ForEach(pipes) { if !$0.destroyed { BambooPipeView(pipe: $0, gapHeight: AdaptiveScreen.gapHeight(for: selectedDifficulty.pipeGapRatio), bypass: bypassMode) } }
+            ForEach(powerUps) { Realistic3DGun(gun: $0.gun, size: screen.gunSize).position(x: $0.x, y: $0.y) }
+            ForEach(pipes) { if !$0.destroyed { BambooPipeView(pipe: $0, gapHeight: screen.gapHeight(for: selectedDifficulty.pipeGapRatio), bypass: bypassMode) } }
             ForEach(bullets) { BulletView(b: $0, color: activeGun.baseColor) }
-            ForEach(hitExplosions) { Circle().fill(activeGun.baseColor.opacity($0.opacity)).frame(width: AdaptiveScreen.scale(40)).blur(radius:6).position(x: $0.x, y: $0.y) }
+            ForEach(hitExplosions) { Circle().fill(activeGun.baseColor.opacity($0.opacity)).frame(width: screen.scale(40)).blur(radius:6).position(x: $0.x, y: $0.y) }
             
             if gameState == .playing || gameState == .ready || gameState == .gameOver {
                 AnimatedAnimalView(type: selectedCharacter, wingPhase: wingPhase, fallingAngle: min(max(Double(birdVelocity/15)*25, -25), 25))
-                    .position(x: AdaptiveScreen.birdX, y: birdY)
+                    .position(x: screen.birdX, y: birdY)
             }
             
             if showMilestone {
                 Text("🦅 SUPER SCORE! 🦅")
-                    .font(.system(size: AdaptiveScreen.scale(28), weight: .heavy))
+                    .font(.system(size: screen.scale(28), weight: .heavy))
                     .foregroundColor(selectedTheme.primaryText)
                     .shadow(color: .orange, radius:4)
                     .transition(.scale.combined(with: .opacity))
@@ -612,24 +893,24 @@ struct ContentView: View {
                 if gameState == .playing {
                     HStack {
                         HStack(spacing: 8) {
-                            Realistic3DGun(gun: activeGun, size: AdaptiveScreen.scale(28), isFiring: hudGunFiring)
-                                .frame(width: AdaptiveScreen.scale(28)*1.9, height: AdaptiveScreen.scale(28)*0.6)
+                            Realistic3DGun(gun: activeGun, size: screen.scale(28), isFiring: hudGunFiring)
+                                .frame(width: screen.scale(28)*1.9, height: screen.scale(28)*0.6)
                             Text("×\(ammoCount)")
-                                .font(.system(size: AdaptiveScreen.scale(16), weight: .bold))
+                                .font(.system(size: screen.scale(16), weight: .bold))
                                 .foregroundColor(ammoCount>0 ? selectedTheme.accentColor : selectedTheme.secondaryText)
                                 .shadow(color: .black.opacity(0.5), radius:1)
                         }
                         Spacer()
                         HStack(spacing: 16) {
                             HStack(spacing:4) {
-                                Image(systemName: "circle.fill").foregroundColor(.yellow).font(.system(size: AdaptiveScreen.scale(18)))
+                                Image(systemName: "circle.fill").foregroundColor(.yellow).font(.system(size: screen.scale(18)))
                                 Text("\(coinManager.totalCoins)")
-                                    .font(.system(size: AdaptiveScreen.scale(18), weight: .bold))
+                                    .font(.system(size: screen.scale(18), weight: .bold))
                                     .foregroundColor(.yellow)
                                     .shadow(color: .black.opacity(0.5), radius:1)
                             }
                             Text("\(score)")
-                                .font(.system(size: AdaptiveScreen.scale(50), weight: .heavy))
+                                .font(.system(size: screen.scale(50), weight: .heavy))
                                 .foregroundColor(selectedTheme.primaryText)
                                 .shadow(color: .black.opacity(0.3), radius:3)
                         }
@@ -637,7 +918,7 @@ struct ContentView: View {
                         HStack(spacing: 10) {
                             Button { bypassMode.toggle(); SoundManager.shared.playSelect() } label: {
                                 Image(systemName: bypassMode ? "shield.fill" : "shield")
-                                    .font(.system(size: AdaptiveScreen.scale(22)))
+                                    .font(.system(size: screen.scale(22)))
                                     .foregroundColor(bypassMode ? .green : selectedTheme.primaryText)
                             }
                             Button {
@@ -646,15 +927,15 @@ struct ContentView: View {
                                 if !isMuted { SoundManager.shared.playSelect() }
                             } label: {
                                 Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                                    .font(.system(size: AdaptiveScreen.scale(20)))
+                                    .font(.system(size: screen.scale(20)))
                                     .foregroundColor(selectedTheme.primaryText)
                             }
                         }
                     }
-                    .padding(.top, AdaptiveScreen.scale(40)).padding(.horizontal)
+                    .padding(.top, screen.scale(40)).padding(.horizontal)
                     if ammoCount > 0 {
                         Text("🔥 AUTO-FIRE ACTIVE!")
-                            .font(.system(size: AdaptiveScreen.scale(13), weight: .bold))
+                            .font(.system(size: screen.scale(13), weight: .bold))
                             .foregroundColor(activeGun.lightColor)
                             .shadow(color: .black.opacity(0.5), radius:1)
                             .padding(.top,2)
@@ -689,21 +970,26 @@ struct ContentView: View {
                 hitExplosions.removeAll { $0.opacity <= 0 }
             }
         }
+        .onAppear {
+            birdY = screen.height / 2
+            prevBirdY = birdY
+        }
     }
     
     func canFireNow() -> Bool {
-        let forwardZoneMaxX = AdaptiveScreen.birdX + AdaptiveScreen.scale(220)
+        let forwardZoneMaxX = screen.birdX + screen.scale(220)
         return pipes.contains { pipe in
             guard !pipe.destroyed else { return false }
             let pipeLeft = pipe.x
-            let pipeRight = pipe.x + AdaptiveScreen.pipeWidth
-            return pipeRight >= AdaptiveScreen.birdX && pipeLeft <= forwardZoneMaxX
+            let pipeRight = pipe.x + screen.pipeWidth
+            return pipeRight >= screen.birdX && pipeLeft <= forwardZoneMaxX
         }
     }
     
     func startGame() {
+        SoundManager.shared.stopGreeting()
         gameState = .playing
-        birdY = AdaptiveScreen.height/2
+        birdY = screen.height/2
         prevBirdY = birdY
         birdVelocity = 0
         pipes.removeAll(); bullets.removeAll(); powerUps.removeAll(); hitExplosions.removeAll()
@@ -722,7 +1008,7 @@ struct ContentView: View {
                 hudGunFiring = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) { hudGunFiring = false }
                 ammoCount -= 1
-                bullets.append(Bullet(x: AdaptiveScreen.birdX + AdaptiveScreen.scale(32), y: birdY))
+                bullets.append(Bullet(x: screen.birdX + screen.scale(32), y: birdY))
                 SoundManager.shared.playShoot()
             }
         }
@@ -734,13 +1020,13 @@ struct ContentView: View {
         prevBirdY = birdY
         birdVelocity += Difficulty.normalGravity
         birdY += birdVelocity
-        if birdY > AdaptiveScreen.height - AdaptiveScreen.groundOffset {
-            birdY = AdaptiveScreen.height - AdaptiveScreen.groundOffset
+        if birdY > screen.height - screen.groundOffset {
+            birdY = screen.height - screen.groundOffset
             if !bypassMode { gameOver() }
             return
         }
-        if birdY < AdaptiveScreen.ceilingOffset {
-            birdY = AdaptiveScreen.ceilingOffset
+        if birdY < screen.ceilingOffset {
+            birdY = screen.ceilingOffset
             birdVelocity = 0
         }
         
@@ -748,33 +1034,34 @@ struct ContentView: View {
         bullets.indices.forEach { bullets[$0].x += 14 }
         powerUps.indices.forEach { powerUps[$0].x -= selectedDifficulty.pipeSpeed }
         
-        if pipes.first?.x ?? 0 < -AdaptiveScreen.pipeWidth { pipes.removeFirst(); addPipe() }
-        bullets.removeAll { $0.x > AdaptiveScreen.width + 50 }
+        if pipes.first?.x ?? 0 < -screen.pipeWidth { pipes.removeFirst(); addPipe() }
+        bullets.removeAll { $0.x > screen.width + 50 }
         powerUps.removeAll { $0.x < -50 }
         
         checkCollisions()
     }
     
     func addPipe() {
-        let safeRange = AdaptiveScreen.minDim * 0.32
-        let gapY = CGFloat.random(in: AdaptiveScreen.height - AdaptiveScreen.height + safeRange ... AdaptiveScreen.height - safeRange)
-        pipes.append(Pipe(x: AdaptiveScreen.width + AdaptiveScreen.scale(80), gapCenterY: gapY))
+        let safeRange = screen.minDim * 0.32
+        let gapY = CGFloat.random(in: screen.height - screen.height + safeRange ... screen.height - safeRange)
+        pipes.append(Pipe(x: screen.width + screen.scale(80), gapCenterY: gapY))
     }
     
     func checkCollisions() {
-        let gapH = AdaptiveScreen.gapHeight(for: selectedDifficulty.pipeGapRatio)
-        let hitR = AdaptiveScreen.hitboxSize / 2
-        let birdL = AdaptiveScreen.birdX - hitR
+        let gapH = screen.gapHeight(for: selectedDifficulty.pipeGapRatio)
+        let hitR = screen.hitboxSize / 2
+        let birdL = screen.birdX - hitR
         
         for bi in bullets.indices.reversed() {
             for pi in pipes.indices.reversed() where !pipes[pi].destroyed {
                 let b = bullets[bi], p = pipes[pi]
-                if b.x > p.x && b.x < p.x + AdaptiveScreen.pipeWidth {
+                if b.x > p.x && b.x < p.x + screen.pipeWidth {
                     pipes[pi].destroyed = true
                     hitExplosions.append(Explosion(x: b.x, y: b.y))
                     bullets.remove(at: bi)
                     score += 3
                     SoundManager.shared.playExplode()
+                    SoundManager.shared.playRandomGreeting()
                     break
                 }
             }
@@ -782,7 +1069,7 @@ struct ContentView: View {
         
         for pi in powerUps.indices.reversed() {
             let pu = powerUps[pi]
-            if hypot(AdaptiveScreen.birdX - pu.x, birdY - pu.y) < hitR + AdaptiveScreen.gunSize/2 {
+            if hypot(screen.birdX - pu.x, birdY - pu.y) < hitR + screen.gunSize/2 {
                 powerUps.remove(at: pi)
                 SoundManager.shared.playPickup()
                 ammoCount = pu.gun.ammo
@@ -794,31 +1081,33 @@ struct ContentView: View {
         for pi in pipes.indices where !pipes[pi].destroyed && !bypassMode {
             let p = pipes[pi]
             let gapTop = p.gapCenterY - gapH/2, gapBottom = p.gapCenterY + gapH/2
-            let pipeL = p.x, pipeR = p.x + AdaptiveScreen.pipeWidth
-            let birdR = AdaptiveScreen.birdX + hitR
+            let pipeL = p.x, pipeR = p.x + screen.pipeWidth
+            let birdR = screen.birdX + hitR
             if birdR > pipeL && birdL < pipeR {
                 if prevBirdY - hitR < gapTop || prevBirdY + hitR > gapBottom || birdY - hitR < gapTop || birdY + hitR > gapBottom {
                     gameOver()
                     return
                 }
             }
-            if !p.passed && pipeR < AdaptiveScreen.birdX {
+            if !p.passed && pipeR < screen.birdX {
                 pipes[pi].passed = true
                 score += 1
                 SoundManager.shared.playScore(selectedCharacter)
+                SoundManager.shared.playRandomGreeting()
                 if HighScoreManager.shared.checkMilestone(score) {
                     showMilestone = true
                     SoundManager.shared.playMilestone()
                 }
                 if Double.random(in: 0...1) < 0.22 {
                     let randomGun = GunType.allCases.randomElement()!
-                    powerUps.append(PowerUp(x: AdaptiveScreen.width + AdaptiveScreen.scale(60), y: CGFloat.random(in: AdaptiveScreen.scale(150)...AdaptiveScreen.height-AdaptiveScreen.scale(150)), gun: randomGun))
+                    powerUps.append(PowerUp(x: screen.width + screen.scale(60), y: CGFloat.random(in: screen.scale(150)...screen.height-screen.scale(150)), gun: randomGun))
                 }
             }
         }
     }
     
     func gameOver() {
+        SoundManager.shared.stopGreeting()
         gameState = .gameOver
         stopAutoFire()
         SoundManager.shared.playGameOver(selectedCharacter)
@@ -831,9 +1120,12 @@ struct ContentView: View {
 
 struct ReadyView: View {
     let char: CharacterType, diff: Difficulty, theme: GameTheme, start: () -> Void
-    let s = AdaptiveScreen.scale
+    @ObservedObject var screen = AdaptiveScreenManager.shared
+    
     var body: some View {
-        VStack(spacing: s(12)) {
+        let s = screen.scale
+        
+        return VStack(spacing: s(12)) {
             Text(String(char.rawValue.prefix(2))).font(.system(size: s(60)))
             Text("READY TO FLY?").font(.system(size: s(26), weight: .heavy)).foregroundColor(theme.primaryText)
             Text("Theme: \(theme.rawValue)")
@@ -852,9 +1144,12 @@ struct ReadyView: View {
 struct GameOverView: View {
     let score: Int, diff: Difficulty, theme: GameTheme, earnedCoins: Int
     let restart: () -> Void, settings: () -> Void
-    let s = AdaptiveScreen.scale
+    @ObservedObject var screen = AdaptiveScreenManager.shared
+    
     var body: some View {
-        VStack(spacing: s(10)) {
+        let s = screen.scale
+        
+        return VStack(spacing: s(10)) {
             Text("GAME OVER 😢").font(.system(size: s(30), weight: .heavy)).foregroundColor(theme.primaryText)
             Text("Score: \(score)").font(.system(size: s(36), weight: .bold)).foregroundColor(theme.secondaryText)
             if earnedCoins > 0 {
@@ -891,4 +1186,6 @@ struct GameOverView: View {
 
 #Preview {
     ContentView()
+        .preferredColorScheme(.dark)
 }
+
