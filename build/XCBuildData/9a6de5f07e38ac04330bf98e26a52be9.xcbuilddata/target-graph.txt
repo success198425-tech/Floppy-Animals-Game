@@ -1,2 +1,0 @@
-Target dependency graph (1 target)
-Target 'Floppy Animals' in project 'Floppy Animals' (no dependencies)

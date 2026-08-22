@@ -7,7 +7,103 @@
         "key": "%lld",
         "location": {
           "startingColumn": 18,
-          "startingLine": 170
+          "startingLine": 234
+        }
+      },
+      {
+        "comment": "",
+        "key": "🏆 %lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 386
+        }
+      },
+      {
+        "comment": "",
+        "key": "🎨 THEME",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 421
+        }
+      },
+      {
+        "comment": "",
+        "key": "⭐ RECOMMENDED",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 435
+        }
+      },
+      {
+        "comment": "",
+        "key": "🐾 CHARACTER",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 453
+        }
+      },
+      {
+        "comment": "",
+        "key": "🎯 DIFFICULTY",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 475
+        }
+      },
+      {
+        "comment": "",
+        "key": "🔊 SOUND",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 495
+        }
+      },
+      {
+        "comment": "",
+        "key": "Effects are muted",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 498
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sound effects on",
+        "location": {
+          "startingColumn": 56,
+          "startingLine": 498
+        }
+      },
+      {
+        "comment": "",
+        "key": "Off",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 504
+        }
+      },
+      {
+        "comment": "",
+        "key": "On",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 504
+        }
+      },
+      {
+        "comment": "",
+        "key": "▶️",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 522
+        }
+      },
+      {
+        "comment": "",
+        "key": "START GAME",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 524
         }
       },
       {
@@ -15,23 +111,15 @@
         "key": "🦅 SUPER SCORE! 🦅",
         "location": {
           "startingColumn": 22,
-          "startingLine": 233
+          "startingLine": 603
         }
       },
       {
         "comment": "",
         "key": "🔥 AUTO-FIRE ACTIVE!",
         "location": {
-          "startingColumn": 45,
-          "startingLine": 261
-        }
-      },
-      {
-        "comment": "",
-        "key": "%lld",
-        "location": {
           "startingColumn": 30,
-          "startingLine": 254
+          "startingLine": 656
         }
       },
       {
@@ -39,7 +127,7 @@
         "key": "×%lld",
         "location": {
           "startingColumn": 34,
-          "startingLine": 246
+          "startingLine": 617
         }
       },
       {
@@ -47,55 +135,15 @@
         "key": "%lld",
         "location": {
           "startingColumn": 34,
-          "startingLine": 251
+          "startingLine": 631
         }
       },
       {
         "comment": "",
-        "key": "🎨 SELECT THEME",
-        "location": {
-          "startingColumn": 22,
-          "startingLine": 461
-        }
-      },
-      {
-        "comment": "",
-        "key": "⭐ RECOMMENDED",
-        "location": {
-          "startingColumn": 60,
-          "startingLine": 471
-        }
-      },
-      {
-        "comment": "",
-        "key": "⚙️ SELECT CHARACTER",
-        "location": {
-          "startingColumn": 22,
-          "startingLine": 485
-        }
-      },
-      {
-        "comment": "",
-        "key": "🎯 SELECT DIFFICULTY",
-        "location": {
-          "startingColumn": 22,
-          "startingLine": 501
-        }
-      },
-      {
-        "comment": "",
-        "key": "🏆 %lld",
+        "key": "%lld",
         "location": {
           "startingColumn": 38,
-          "startingLine": 509
-        }
-      },
-      {
-        "comment": "",
-        "key": "▶️ START GAME",
-        "location": {
-          "startingColumn": 18,
-          "startingLine": 524
+          "startingLine": 626
         }
       },
       {
@@ -103,7 +151,7 @@
         "key": "READY TO FLY?",
         "location": {
           "startingColumn": 18,
-          "startingLine": 540
+          "startingLine": 838
         }
       },
       {
@@ -111,7 +159,7 @@
         "key": "Theme: %@",
         "location": {
           "startingColumn": 18,
-          "startingLine": 541
+          "startingLine": 839
         }
       },
       {
@@ -119,7 +167,7 @@
         "key": "Difficulty: %@ | 🏆 Best: %lld",
         "location": {
           "startingColumn": 18,
-          "startingLine": 543
+          "startingLine": 842
         }
       },
       {
@@ -127,7 +175,7 @@
         "key": "👆 Tap = Jump | 🟢3 🟣5 🔴7 Bullets | 🪙 100 Score = 1 Coin",
         "location": {
           "startingColumn": 18,
-          "startingLine": 545
+          "startingLine": 844
         }
       },
       {
@@ -135,7 +183,7 @@
         "key": "TAP ANYWHERE TO START",
         "location": {
           "startingColumn": 18,
-          "startingLine": 547
+          "startingLine": 846
         }
       },
       {
@@ -143,7 +191,7 @@
         "key": "GAME OVER 😢",
         "location": {
           "startingColumn": 18,
-          "startingLine": 559
+          "startingLine": 858
         }
       },
       {
@@ -151,39 +199,39 @@
         "key": "Score: %lld",
         "location": {
           "startingColumn": 18,
-          "startingLine": 560
+          "startingLine": 859
         }
       },
       {
         "comment": "",
-        "key": "🪙 +%lld Coins Earned!",
+        "key": "🪙 Earned: +%lld Coins!",
         "location": {
           "startingColumn": 22,
-          "startingLine": 562
+          "startingLine": 861
         }
       },
       {
         "comment": "",
-        "key": "🏆 Best for %@: %lld",
+        "key": "🏆 Best: %lld",
         "location": {
           "startingColumn": 18,
-          "startingLine": 565
+          "startingLine": 863
         }
       },
       {
         "comment": "",
-        "key": "TAP ANYWHERE TO PLAY AGAIN",
+        "key": "🔄 RESTART",
         "location": {
-          "startingColumn": 18,
-          "startingLine": 567
+          "startingColumn": 26,
+          "startingLine": 866
         }
       },
       {
         "comment": "",
-        "key": "⚙️ CHANGE SETTINGS",
+        "key": "⚙️ SETTINGS",
         "location": {
-          "startingColumn": 20,
-          "startingLine": 568
+          "startingColumn": 26,
+          "startingLine": 877
         }
       }
     ]
