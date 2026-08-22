@@ -159,7 +159,6 @@ let AdaptiveScreen = AdaptiveScreenManager.shared
 final class SoundManager: NSObject {
     static let shared = SoundManager()
     private let speechSynthesizer = AVSpeechSynthesizer()
-    private var pendingGreeting: DispatchWorkItem?
     private lazy var greetingVoices: [AVSpeechSynthesisVoice] = {
         let voices = AVSpeechSynthesisVoice.speechVoices()
         let lilyVoice = voices.first { voice in
@@ -360,39 +359,31 @@ final class SoundManager: NSObject {
     
     func playRandomGreeting() {
         guard !UserDefaults.standard.bool(forKey: "Muted") else { return }
-        pendingGreeting?.cancel()
 
-        let greetingTask = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            guard !UserDefaults.standard.bool(forKey: "Muted") else { return }
+        let greeting = greetings.randomElement() ?? "Good job!"
+        let utterance = AVSpeechUtterance(string: greeting)
+        utterance.voice = greetingVoices.randomElement() ?? fallbackGreetingVoice
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.78
+        utterance.pitchMultiplier = 1.22
+        utterance.volume = 1.0
+        utterance.preUtteranceDelay = 0.02
+        utterance.postUtteranceDelay = 0.12
 
-            let greeting = greetings.randomElement() ?? "Good job!"
-            let utterance = AVSpeechUtterance(string: greeting)
-            utterance.voice = greetingVoices.randomElement() ?? fallbackGreetingVoice
-            utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.78
-            utterance.pitchMultiplier = 1.22
-            utterance.volume = 1.0
-            utterance.preUtteranceDelay = 0.02
-            utterance.postUtteranceDelay = 0.12
-
-            do {
-                let session = AVAudioSession.sharedInstance()
-                try session.setCategory(.playback, mode: .default, options: [.duckOthers, .defaultToSpeaker])
-                try session.setActive(true)
-            } catch {
-                print("Greeting audio session error: \(error)")
-            }
-
-            self.speechSynthesizer.speak(utterance)
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.duckOthers, .defaultToSpeaker])
+            try session.setActive(true)
+        } catch {
+            print("Greeting audio session error: \(error)")
         }
 
-        pendingGreeting = greetingTask
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18, execute: greetingTask)
+        if speechSynthesizer.isSpeaking {
+            speechSynthesizer.stopSpeaking(at: .immediate)
+        }
+        speechSynthesizer.speak(utterance)
     }
 
     func stopGreeting() {
-        pendingGreeting?.cancel()
-        pendingGreeting = nil
         speechSynthesizer.stopSpeaking(at: .immediate)
     }
 }
